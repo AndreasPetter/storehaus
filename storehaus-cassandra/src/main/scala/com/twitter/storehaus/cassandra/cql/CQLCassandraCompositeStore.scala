@@ -32,6 +32,8 @@ import ops.hlist.Mapped
 import ops.hlist.ToList
 import Nat._
 import UnaryTCConstraint._
+import com.twitter.storehaus.WithPutTtl
+import org.slf4j.{ Logger, LoggerFactory }
 
 /**
  *  Cassandra store for fixed composite keys, allows to do slice queries over column slices.
@@ -131,8 +133,8 @@ class CQLCassandraCompositeStore[RK <: HList, CK <: HList, V, RS <: HList, CS <:
   override def withPutTtl(ttl: Duration): CQLCassandraCompositeStore[RK, CK, V, RS, CS] = new CQLCassandraCompositeStore[RK, CK, V, RS, CS](
     columnFamily, rowkeySerializer, rowkeyColumnNames, colkeySerializer, colkeyColumnNames, valueColumnName, consistency, poolSize, batchType,
     Option(ttl))(cassSerValue)
-
-  override protected def putValue(value: V, update: Update): Update.Assignments = update.`with`(QueryBuilder.set(valueColumnName, value))
+   
+  override protected def putValue(value: V, update: Update): Update.Assignments = {update.`with`(QueryBuilder.set(valueColumnName, cassSerValue.toCType(value)))}
 
   override protected def getValue(result: ResultSet): Option[V] = cassSerValue.fromRow(result.one(), valueColumnName)
 
